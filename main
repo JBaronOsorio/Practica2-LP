@@ -1,0 +1,130 @@
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.io.IOException;
+import java.util.regex.Pattern;
+import java.util.stream.*;
+
+
+public class Main {
+    static List<Student>studentList;
+    public static void main(String[] args) throws IOException {
+        //Funciones de lectura de archivos y datos
+        cargarArchivo();
+        mostrarStudentsPorCarrera();
+        totalMujeresPorCarrera();
+        totalHombresPorCarrera();
+        topStudentPorCarrera();
+        topStudentTodos();
+        puntajePromedioPorCarrera();
+    }
+    static void cargarArchivo() throws IOException{
+        Pattern pattern =Pattern.compile(",");    
+        String filename= "student-scores.csv";
+
+        try(Stream<String> lines = Files.lines(Path.of(filename))){
+            studentList=lines.skip(1).map(line->{
+                String[]data=pattern.split(line);
+                return new Student(
+                        Integer.parseInt(data[0].trim()),
+                        data[1].trim(),
+                        data[2].trim(),
+                        data[4].trim(),
+                        data[9].trim(),
+                        Integer.parseInt(data[10].trim())
+                );
+            }).collect(Collectors.toList());
+
+        }
+    }
+    static void mostrarStudentsPorCarrera(){
+
+        System.out.printf("Aspirantes por carrera:\n");
+        Map<String, List<Student>> studentsByCareer =
+                studentList.stream()
+                        .collect(Collectors.groupingBy(Student::getCareer_aspiration));
+        studentsByCareer.forEach(
+                (career, studentList) ->
+                {
+                    System.out.println("Carrera: " + career);
+                    studentList.forEach(student -> System.out.println("  Id: " + student.getId() + ", " + student.getFirst_Name() + " " + student.getLast_Name()));
+                    System.out.println("Total: " + studentList.size()+"\n");
+                }
+        );
+    }
+    static void totalMujeresPorCarrera(){
+        System.out.println("Mujeres por carrera:\n");
+        Map<String, Long> womenByCareer = studentList.stream()
+                .filter(student -> student.getGender().equals("female"))
+                .collect(Collectors.groupingBy(Student::getCareer_aspiration, Collectors.counting()));
+        womenByCareer.forEach(
+                (career, total) ->
+                {
+                    System.out.print("Carrera: " + career);
+                    System.out.print(",  Total: " + total+"\n");
+                }
+        );
+        System.out.println();
+
+    }
+    static void totalHombresPorCarrera(){
+        System.out.println("Hombres por carrera:\n");
+        Map<String, Long> menByCareer = studentList.stream()
+                .filter(student -> student.getGender().equals("male"))
+                .collect(Collectors.groupingBy(Student::getCareer_aspiration, Collectors.counting()));
+
+
+        menByCareer.forEach(
+                (career, total) ->
+                {
+                    System.out.print("Carrera: " + career);
+                    System.out.print(",  Total: " + total+"\n");
+                }
+        );
+        System.out.println();
+
+    }
+
+    static void topStudentPorCarrera(){
+        System.out.println("Estudiante con el puntaje más alto (math_score) por carrera:\n");
+
+        Map<String, Optional<Student>> topStudentByCareer = studentList.stream()
+                .collect(Collectors.groupingBy(Student::getCareer_aspiration,
+                        Collectors.maxBy((s1, s2) -> Integer.compare(s1.getMath_score(), s2.getMath_score()))));
+
+        topStudentByCareer.forEach(
+                (career, students) ->
+                {
+                    System.out.print("Carrera: " + career);
+                    System.out.print(",  Estudiante: \n" + students.orElse(null)+"\n");
+                }
+        );
+        System.out.println();
+    }
+    static void topStudentTodos(){
+        System.out.println("Estudiante con el puntaje (math_score) más alto de todos: \n");
+        Optional<Student> topStudentOverall = studentList.stream()
+                .max((s1, s2) -> Integer.compare(s1.getMath_score(), s2.getMath_score()));
+        System.out.println(topStudentOverall.orElse(null));
+
+        System.out.println();
+    }
+    static void puntajePromedioPorCarrera(){
+        System.out.println("Puntaje Promedio (math_score) por carrera: \n");
+        Map<String, Double> averageMathScoreByCareer = studentList.stream()
+                .collect(Collectors.groupingBy(Student::getCareer_aspiration,
+                        Collectors.averagingDouble(Student::getMath_score)));
+
+        averageMathScoreByCareer.forEach(
+                (career, promedio) ->
+                {
+                    System.out.print("Carrera: " + career);
+                    System.out.print(",  Promedio: " + promedio+"\n");
+                }
+        );
+        System.out.println();
+
+    }
+}
